@@ -1,4 +1,4 @@
 - insert:
-    - id: free-ai-router-dshplugin
-      name: free-ai-router-dshplugin
+    - id: providermux-dsh
+      name: providermux-dsh
       inject: [llm]

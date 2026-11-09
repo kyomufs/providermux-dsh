@@ -1,6 +1,6 @@
 'use strict'
 
-// Checks for the free-ai-router-dshplugin.
+// Checks for the providermux-dsh.
 //
 // WHAT IS CHECKED. The plugin is an intermediary between the harness and the
 // gateway. So exactly the boundaries are checked: how it understands the

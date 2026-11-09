@@ -1,7 +1,7 @@
-# free-ai-router-dshplugin
+# providermux-dsh
 
 Free models from several providers inside DeepSeek Harness, through the local
-[free-ai-router](https://github.com/kyomufs/free-ai-router) gateway.
+[providermux](https://github.com/kyomufs/providermux) gateway.
 
 Every provider the gateway serves appears in the model selector as its **own
 route**. Adding a provider needs no plugin release: a section in the gateway
@@ -10,7 +10,7 @@ configuration is enough.
 ## Install
 
 ```sh
-dsh plugin --profile web add github:kyomufs/free-ai-router-dshplugin
+dsh plugin --profile web add github:kyomufs/providermux-dsh
 ```
 
 Restart `dsh web` — the routes appear in the model picker.
@@ -18,7 +18,7 @@ Restart `dsh web` — the routes appear in the model picker.
 ## How it works
 
 ```
-harness (DSH) ──▶ free-ai-router-dshplugin ──▶ free-ai-router ──▶ provider
+harness (DSH) ──▶ providermux-dsh ──▶ providermux ──▶ provider
                         │                           │
                   call translation            request shape,
                   and stream parsing          keys, transport

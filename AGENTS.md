@@ -1,4 +1,4 @@
-# AGENTS.md — free-ai-router-dshplugin
+# AGENTS.md — providermux-dsh
 
 Rules for working in this repository.
 
@@ -32,7 +32,7 @@ git -c user.name="kyomufs" -c user.email="kyomufsdev@gmail.com" commit -F - <<'E
 EOF
 
 TOKEN=$(grep -o 'ghp_[A-Za-z0-9]*' /home/kyomufs/.dsh/profiles/web/cordis.patch.yml | head -1)
-git push "https://kyomufs:$TOKEN@github.com/kyomufs/free-ai-router-dshplugin.git" HEAD:main \
+git push "https://kyomufs:$TOKEN@github.com/kyomufs/providermux-dsh.git" HEAD:main \
   2>&1 | sed 's/ghp_[A-Za-z0-9]*/***/g'
 ```
 
