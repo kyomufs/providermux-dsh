@@ -283,6 +283,8 @@ function testRefusal() {
 
   check('a stable refusal is classified as a failure, not as a wait', () => {
     assert.strictEqual(failureCode(429, ''), 'RATE_LIMIT')
+    assert.strictEqual(failureCode(429, '{"error":{"type":"FreeUsageLimitError"}}'), 'QUOTA')
+    assert.strictEqual(failureCode(429, 'Free usage limit reached. Free models work in OpenCode'), 'QUOTA')
     assert.strictEqual(failureCode(500, ''), 'SERVER')
     assert.strictEqual(failureCode(418, ''), 'PROVIDER_ERROR')
   })
@@ -352,6 +354,28 @@ async function testRefusalOnTheWire() {
       // Absence, not zero: the harness rejects a present-but-unusable value
       // and zero is rejected along with NaN.
       assert.strictEqual('providerRetryAfterMs' in caught.failure, false)
+    } finally {
+      globalThis.fetch = original
+    }
+  })
+
+  await checkAsync('a free usage limit error is classified as QUOTA without wait', async () => {
+    const original = globalThis.fetch
+    globalThis.fetch = async () => new Response(
+      JSON.stringify({ type: 'error', error: { type: 'FreeUsageLimitError', message: 'Free usage limit reached.' } }),
+      { status: 429, headers: { 'retry-after': '60' } }
+    )
+    try {
+      let caught
+      try {
+        for await (const _event of createStreamer({ provider: 'opencode' }, { model: 'm', messages: [] })) {
+        }
+      } catch (error) {
+        caught = error
+      }
+      assert.ok(caught, 'the refusal was swallowed')
+      assert.strictEqual(caught.code, 'QUOTA')
+      assert.strictEqual('providerRetryAfterMs' in caught.failure, false, 'wait must be stripped for quota errors')
     } finally {
       globalThis.fetch = original
     }
