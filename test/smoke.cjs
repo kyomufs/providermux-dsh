@@ -164,11 +164,20 @@ function testAdapter() {
     // The harness calls the method without checking whether it exists: its
     // absence breaks route registration entirely rather than leaving the
     // default policy in place.
-    const policy = createAdapter(stubCtx, 'opencode').providerRetryPolicy()
+    const policy = createAdapter(stubCtx, 'antigravity').providerRetryPolicy()
     assert.strictEqual(policy.mode, 'normal')
     assert.strictEqual(policy.maxRetries, 5)
     assert.ok(Array.isArray(policy.retryableCodes) && policy.retryableCodes.length > 0)
     assert.ok(!policy.retryableCodes.includes('POLICY'), 'a stable refusal is not retried')
+  })
+
+  check('opencode zen is never retried', () => {
+    // Both fields take part in the decision: the scheduler gives up when
+    // previousRetry >= maxRetries and matches the code against the list. A
+    // zeroed ladder is the only shape that refuses every repeat.
+    const policy = createAdapter(stubCtx, 'opencode').providerRetryPolicy()
+    assert.strictEqual(policy.maxRetries, 0)
+    assert.deepStrictEqual(policy.retryableCodes, [])
   })
 
   check('retry delays sit on the top level', () => {
@@ -177,7 +186,7 @@ function testAdapter() {
     // computed from NaN, and retries run back to back. That is why both the
     // presence of values and the absence of the nested object are checked —
     // the latter would mean someone returned the descriptive form.
-    const policy = createAdapter(stubCtx, 'opencode').providerRetryPolicy()
+    const policy = createAdapter(stubCtx, 'antigravity').providerRetryPolicy()
     assert.strictEqual(policy.backoff, undefined, 'the descriptive form was returned')
     assert.ok(policy.initialDelayMs > 0, 'the delay was not resolved')
     assert.ok(policy.maxDelayMs >= policy.initialDelayMs)
