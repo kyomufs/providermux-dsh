@@ -174,7 +174,9 @@ function testAdapter() {
   check('opencode zen is never retried', () => {
     // Both fields take part in the decision: the scheduler gives up when
     // previousRetry >= maxRetries and matches the code against the list. A
-    // zeroed ladder is the only shape that refuses every repeat.
+    // zeroed ladder is the only shape that refuses every repeat. The reason is
+    // that the gateway is the only one that answers: it never retries or
+    // switches models, so a repeat above it would speak over the real error.
     const policy = createAdapter(stubCtx, 'opencode').providerRetryPolicy()
     assert.strictEqual(policy.maxRetries, 0)
     assert.deepStrictEqual(policy.retryableCodes, [])
