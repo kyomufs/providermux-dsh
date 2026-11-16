@@ -270,7 +270,7 @@ function testAdapter() {
 // --- refusals ---
 
 function testRefusal() {
-  const { providerRetryAfterMs, failureCode, buildBody } = require('../lib/stream.cjs')
+  const { providerRetryAfterMs, failureCode, refusalMessage, buildBody } = require('../lib/stream.cjs')
 
   check('the wait is read from both header forms', () => {
     assert.strictEqual(providerRetryAfterMs(new Headers({ 'retry-after-ms': '1500' })), 1500)
@@ -298,6 +298,29 @@ function testRefusal() {
     assert.strictEqual(failureCode(429, 'Free usage limit reached. Free models work in OpenCode'), 'QUOTA')
     assert.strictEqual(failureCode(500, ''), 'SERVER')
     assert.strictEqual(failureCode(418, ''), 'PROVIDER_ERROR')
+  })
+
+  check('the refusal message is the provider\'s own sentence', () => {
+    // The sentence names the reason; the status and the code travel beside it as
+    // fields of their own. A prefix of the plugin's making would put its voice in
+    // front of the provider's and bury the explanation inside JSON.
+    assert.strictEqual(
+      refusalMessage(429, JSON.stringify({
+        type: 'error',
+        error: { type: 'FreeUsageLimitError', message: 'Free usage limit reached.' },
+      })),
+      'Free usage limit reached.',
+    )
+    assert.strictEqual(
+      refusalMessage(400, JSON.stringify({
+        error: { message: 'max_tokens: 99999999 exceeds maximum 131072', type: 'invalid_request_error' },
+      })),
+      'max_tokens: 99999999 exceeds maximum 131072',
+    )
+    // A body that is not an envelope is the only explanation there is, so it is
+    // handed over as it stands.
+    assert.strictEqual(refusalMessage(500, 'plain words from the provider'), 'plain words from the provider')
+    assert.strictEqual(refusalMessage(403, ''), 'HTTP 403')
   })
 
   check('the token allowance is sent only when it was set', () => {
@@ -386,6 +409,7 @@ async function testRefusalOnTheWire() {
       }
       assert.ok(caught, 'the refusal was swallowed')
       assert.strictEqual(caught.code, 'QUOTA')
+      assert.strictEqual(caught.failure.message, 'Free usage limit reached.', 'the provider\'s sentence did not survive')
       assert.strictEqual('providerRetryAfterMs' in caught.failure, false, 'wait must be stripped for quota errors')
     } finally {
       globalThis.fetch = original
