@@ -294,10 +294,25 @@ function testRefusal() {
 
   check('a stable refusal is classified as a failure, not as a wait', () => {
     assert.strictEqual(failureCode(429, ''), 'RATE_LIMIT')
-    assert.strictEqual(failureCode(429, '{"error":{"type":"FreeUsageLimitError"}}'), 'QUOTA')
-    assert.strictEqual(failureCode(429, 'Free usage limit reached. Free models work in OpenCode'), 'QUOTA')
     assert.strictEqual(failureCode(500, ''), 'SERVER')
     assert.strictEqual(failureCode(418, ''), 'PROVIDER_ERROR')
+  })
+
+  check('a spent allowance is terminal but keeps the provider\'s words', () => {
+    // The code decides two things at once: the harness's retry scheduler and the
+    // sentence the chat UI shows. QUOTA is terminal — good — but the harness
+    // localizes it into "Request quota exhausted." and drops the message with
+    // it, and on a gateway the message is the only place the limit and the way
+    // out of it are named. PROVIDER_ERROR is equally terminal and is shown as
+    // written, so no failure may ever come out of here as QUOTA.
+    assert.strictEqual(failureCode(429, '{"error":{"type":"FreeUsageLimitError"}}'), 'PROVIDER_ERROR')
+    assert.strictEqual(failureCode(429, 'Free usage limit reached. Free models work in OpenCode'), 'PROVIDER_ERROR')
+    assert.strictEqual(failureCode(402, 'insufficient_quota'), 'PROVIDER_ERROR')
+    for (const status of [400, 402, 403, 409, 418, 429, 500, 503]) {
+      for (const detail of ['', 'quota exceeded', '{"error":{"code":"insufficient_quota"}}']) {
+        assert.notStrictEqual(failureCode(status, detail), 'QUOTA', `HTTP ${status}: QUOTA hides the provider's words`)
+      }
+    }
   })
 
   check('the refusal message is the provider\'s own sentence', () => {
@@ -393,7 +408,7 @@ async function testRefusalOnTheWire() {
     }
   })
 
-  await checkAsync('a free usage limit error is classified as QUOTA without wait', async () => {
+  await checkAsync('a free usage limit error is terminal, wait-free, and keeps its words', async () => {
     const original = globalThis.fetch
     globalThis.fetch = async () => new Response(
       JSON.stringify({ type: 'error', error: { type: 'FreeUsageLimitError', message: 'Free usage limit reached.' } }),
@@ -408,9 +423,11 @@ async function testRefusalOnTheWire() {
         caught = error
       }
       assert.ok(caught, 'the refusal was swallowed')
-      assert.strictEqual(caught.code, 'QUOTA')
+      // Not QUOTA: the harness would replace the message with a canned sentence
+      // and the provider's own explanation would never reach a person.
+      assert.strictEqual(caught.code, 'PROVIDER_ERROR')
       assert.strictEqual(caught.failure.message, 'Free usage limit reached.', 'the provider\'s sentence did not survive')
-      assert.strictEqual('providerRetryAfterMs' in caught.failure, false, 'wait must be stripped for quota errors')
+      assert.strictEqual('providerRetryAfterMs' in caught.failure, false, 'wait must be stripped for a spent allowance')
     } finally {
       globalThis.fetch = original
     }
