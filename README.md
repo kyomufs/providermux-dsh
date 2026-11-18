@@ -92,12 +92,16 @@ release.
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `FREE_AI_ROUTER_BASE` | gateway address, no path | `http://127.0.0.1:8787` |
-| `FREE_AI_ROUTER_TOKEN` | token for `server` mode | empty |
+| `PROVIDERMUX_BASE` | gateway address, no path | `http://127.0.0.1:8787` |
+| `PROVIDERMUX_TOKEN` | token for `server` mode | empty |
 
-`FREE_AI_ROUTER_TOKEN` is a **different** secret from a provider key: a key opens
+`PROVIDERMUX_TOKEN` is a **different** secret from a provider key: a key opens
 access to the service, the token opens access to your gateway. An empty value is
 normal for `local` mode — nobody but this machine can reach a loopback listener.
+
+The pre-rename `FREE_AI_ROUTER_BASE` and `FREE_AI_ROUTER_TOKEN` names are still
+read when the `PROVIDERMUX_*` variables are unset, so an existing service file
+keeps working; new configuration should use the canonical names.
 
 ## Tests
 
